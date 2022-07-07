@@ -12,14 +12,17 @@ from dataset import create_dataset_approx, per_class_loader
 device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
 kwargs = {'num_workers': 1, 'pin_memory': True} if device == 'cuda' else {}
 
-model_name = "all_cnn"
-dataset = "cifar10"
+model_name = "lenet"
+dataset = "mnist"
 
 train_set, x_train_approx, y_train_approx, test_set = create_dataset_approx(dataset)
 x_train, y_train = train_set.data, train_set.targets
 
 (num_true, num_prior, num_random, num_approx, num_classes), args = get_args(num_approx=55000)    
 path = create_path(model_name, args, num_true, num_random, dataset)
+
+mkdir(path)
+mkdir(path + "tensors")
 
 mc = get_model_class(model_name)
 model = mc(*args).to(device)
@@ -39,7 +42,7 @@ if __name__ == "__main__":
     evecs_end = []
 
     for i, loader in enumerate(loaders):
-
+        print(f"Currently Computing FIM for Class: {i+1}")
         if (model_name == "lenet"):
             FIM_i, L_i, u_i = FIM_true(model_init, criterion, loader, device, 600)
             FIM_tt, L_tt, u_tt = FIM_true(model, criterion, loader, device, 600)
@@ -47,8 +50,8 @@ if __name__ == "__main__":
             FIM_i, L_i, u_i = FIM_true(model_init, criterion, loader, "cpu", 1000)
             FIM_tt, L_tt, u_tt = FIM_true(model, criterion, loader, "cpu", 1000)
 
-        torch.save((FIM_i, L_i, u_i), f"{path}cls_{i}_FIM_true_init.pt")
-        torch.save((FIM_tt, L_tt, u_tt), f"{path}cls_{i}_FIM_true_end.pt")
+        torch.save((FIM_i, L_i, u_i), f"{path}tensors/cls_{i}_FIM_true_init.pt")
+        torch.save((FIM_tt, L_tt, u_tt), f"{path}tensors/cls_{i}_FIM_true_end.pt")
         evecs_init.append(u_i)
         evecs_end.append(u_tt)
     

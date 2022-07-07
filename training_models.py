@@ -59,7 +59,7 @@ test_loader = torch.utils.data.DataLoader(test_set,
 
 
 epochs = 20
-torch.save(model.state_dict(), path + "model_init.pt")
+torch.save(model.state_dict(), path + "tensors/model_init.pt")
 
 optimizer = optim.Adam(model.parameters(), lr = 2e-3)
 scheduler = CosineAnnealingLR(optimizer,T_max=epochs, eta_min = 5e-4)
@@ -83,7 +83,6 @@ for epoch in range(epochs):
     print("lr", optimizer.param_groups[0]['lr'])
 
 torch.save(model.state_dict(), path + "tensors/model.pt")
-
 
 
 model.load_state_dict(torch.load(path + "tensors/model.pt", map_location='cpu'))

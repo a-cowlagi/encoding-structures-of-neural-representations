@@ -17,7 +17,6 @@ path = create_path(model_name, args, num_true, num_random, dataset)
 if __name__ == "__main__":
     FIM_end, evals, evecs = torch.load(path + "tensors/FIM_true_end_full.pt", map_location= "cpu")
     
-    #embeddings = torch.load(path + "tensors/img_param_space_embeddings.pt", map_location= "cpu")
     test_embeddings, test_targets = torch.load(path + "tensors/img_param_space_test_embeddings.pt", map_location= "cpu")
 
     

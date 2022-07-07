@@ -459,7 +459,6 @@ def create_dataset_approx(dataset_name = "cifar10"):
         # Separating trainset/testset data/labels
         x_train_approx = train_set_approx.data
         y_train_approx = train_set_approx.targets
-        print(y_train_approx)
         
         
     return train_set, x_train_approx, y_train_approx, test_set
