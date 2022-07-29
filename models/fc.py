@@ -47,22 +47,5 @@ class Network1(nn.Module):
 
 
 
-# net = Network(2, 2, 300)
-# print(net.classifier)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 

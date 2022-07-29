@@ -18,7 +18,7 @@ dataset = "mnist"
 train_set, x_train_approx, y_train_approx, test_set = create_dataset_approx(dataset)
 x_train, y_train = train_set.data, train_set.targets
 
-(num_true, num_prior, num_random, num_approx, num_classes), args = get_args(num_approx=55000)    
+(num_true, num_prior, num_random, num_approx, num_classes), args = get_args(model_name, dataset = dataset, num_approx=55000)    
 path = create_path(model_name, args, num_true, num_random, dataset)
 
 mkdir(path)

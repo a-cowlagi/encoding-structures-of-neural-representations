@@ -655,7 +655,7 @@ def diag_hess(model, loader, device):
     return hess_diag_list
 
 
-def overlap(A, B, k, device):
+def overlap(A, B, k, device = "cpu"):
 
     A, B = torch.tensor(A).to(device), torch.tensor(B).to(device)
     over = torch.zeros(k).to(device)

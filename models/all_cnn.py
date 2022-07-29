@@ -48,38 +48,3 @@ class allcnn_t(nn.Module):
 
     def forward(self, x):
         return self.m(x)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# x = torch.randn([500, 3, 32, 32]).float()
-
-# net = allcnn_t(2, 96, 192)
-
-# print(net(x).shape)
-

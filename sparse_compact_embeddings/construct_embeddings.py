@@ -131,7 +131,7 @@ if __name__ == "__main__":
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     max_examples = 5000
 
-    (num_true, num_prior, num_random, num_approx, num_classes), args = get_args()
+    (num_true, num_prior, num_random, num_approx, num_classes), args = get_args(model_name, dataset = dataset) 
     path = create_path(model_name, args, num_true, num_random, dataset)
 
     mkdir(path)
@@ -139,7 +139,7 @@ if __name__ == "__main__":
 
     mc = get_model_class(model_name)
     model = mc(*args)
-    print('Num parameters: ', sum([p.numel() for p in model.m.parameters()]))
+    print('Num parameters: ', sum([p.numel() for p in model.parameters()]))
 
     trained = True
 
@@ -198,6 +198,31 @@ if __name__ == "__main__":
         embeddings = {}
 
         test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=True)
+
+    for cls, loader in enumerate(loaders):
+        print(f"Currently Processing Class: {cls}")
+        prev_param = 0
+        curr_param = 0
+        curr_cls_embeddings = torch.zeros((num_samples[cls], num_params))
+
+        for i, (X, y) in enumerate(loader):
+            print(f"Batch: {i}")
+            # forward pass -- getting the outputs
+            X = X.to(device)
+            activation = {}
+            out = model(X)
+            prev_param = 0
+            curr_param = 0
+            curr_batch_embeddings = torch.zeros((X.shape[0], num_params))
+            curr_batch_embeddings = batch_embeddings(
+                curr_batch_embeddings, conv_param_layers, linear_param_layers, model_name = model_name, 
+            prev_param = prev_param, curr_param = curr_param)
+
+            curr_cls_embeddings[i*batch_size:(i+1)
+                                * batch_size, :] += curr_batch_embeddings
+        
+
+        torch.save((cls, curr_cls_embeddings), f"{path}tensors/cls_{cls}_img_param_space_embeddings.pt")
 
     test_embeddings =  torch.zeros((len(test_set), num_params))
     test_targets = torch.zeros(len(test_set))

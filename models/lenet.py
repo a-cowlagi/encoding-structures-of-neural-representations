@@ -69,5 +69,4 @@ class lenet(nn.Module):
         x = self.L3(x)
         
         return x
-    
-
+ 
