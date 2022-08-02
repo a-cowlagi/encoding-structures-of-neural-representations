@@ -6,6 +6,88 @@ from sklearn.preprocessing import StandardScaler
 class StructureComparePair():
     def __init__(self, x1: np.ndarray, x2: np.ndarray, 
                     x_other: Optional[np.ndarray] = None, retain_var = 0.96, num_divisions = 10, rank_mode = "projection", set_all = True) -> None:
+        """A general-purpose implementation to compare the structure of sets of examples with
+        the same dimensionality from geometric and information theoeretic perspectives. 
+        
+        Currently, the primary inteded comparison scheme is as follows: 
+        1) Divide each set of examples into num_divisions subsets of roughly equal sizes,
+        ranked by rank_mode. The goal is for the i-th set of examples to be the i-th
+        most representative set of examples of the full class. For instance, if 
+        x1 = airplanes, then self.x1_divided[0] is the set of most "airplane-like" images
+        2) Compare Union(x1_divided[i], x2_divided[i]) to Union(x1_divided[j], x2_divided[j])
+        for pairs (i, j).  
+
+        Example use cases: Comparing 2 classes from CIFAR-10, MNIST, or random images
+
+        Args:
+            x1 (np.ndarray): 
+                            A 2D numpy array (or array-like) object consisting of examples of the first set.
+                            The array should be shape (n1, d) where d is the dimensionality of each example 
+                            and n1 is the number of examples. An ```AssertionError``` will be thrown if
+                            x1 is not 2-dimensional -- if passing in images, they must be flattened appropriately.
+            
+            x2 (np.ndarray):
+                            A 2D numpy array (or array-like) object consisting of examples of the second set.
+                            The array should be shape (n2, d) where d is the dimensionality of each example 
+                            and n2 is the number of examples. An ```AssertionError``` will be thrown if
+                            x2 is not 2-dimensional -- if passing in images, they must be flattened appropriately.
+            
+            x_other (Optional[np.ndarray], optional): 
+                            Set of examples to use as the basis of comparisons, if provided. Otherwise, set to
+                            np.vstack((x1, x2)). Defaults to None. 
+            
+            retain_var (float, optional): 
+                            Proportion of variance that must be explained by the retained principal components 
+                            of x_other. Defaults to 0.96.
+
+            num_divisions (int, optional): 
+                            Number of subsets to divide each set of examples into, ranked by ```rank_mode```. 
+                            Defaults to 10.
+            
+            rank_mode (str, optional): 
+                            Can be either "projection" or "reconstruction". If "projection", examples
+                            of each ranked according to sum of projection coefficients along their largest
+                            principal components (i.e. x1 ranked according to x1's PCs, 
+                            x2 ranked according to x2's PCs). If "reconstruction" examples are ranked
+                            according to reconstruction error from using the largest principal components,
+                            this time computed across both sets of samples. 
+            
+                            Defaults to "projection".
+            
+            set_all (bool, optional): 
+                            (Deprecated) If true, the projection coefficients of
+                            each set of examples  is computed using the PCs of x_other if provided,
+                            else along x1. Computed values are stored in x1_proj_coeffs, x2_proj_coeffs.
+                            Defaults to True.
+
+        Attributes:
+            self.x1_divided (List[np.ndarray]):
+                            x1 partitioned by scheme prescribed by rank_mode. A list with num_divisions
+                            np.ndarrays of shape (n1 // num_divisions, d) (last entry may have fewer).
+            self.x2_divided (List[np.ndarray]):
+                            x2 partitioned by scheme prescribed by rank_mode. A list with num_divisions
+                            np.ndarrays of shape (n2 // num_divisions, d) (last entry may have fewer).
+
+            self.x1_div_coeffs (List[np.ndarray]): 
+                            Projection coefficients for each ranked subset of x1 examples, computed 
+                            relative to the PCs of divided_base (x_other if not None, else 
+                            np.vstack(x1, x2)).
+            self.x2_div_coeffs (Listp[np.ndarray]): 
+                            Projection coefficients for each ranked subset of x2 examples, computed 
+                            relative to the PCs of divided_base (x_other if not None, else 
+                            np.vstack(x1, x2)).
+
+            self.x1_proj_coeffs (np.ndarray): (Deprecated)
+                        Projection coefficients for full set of x1 examples, computed relative
+                        to the PCs of base (x_other if not None, else x1), with coefficients scaled by
+                        1/singular value for normalization.
+            self.x2_proj_coeffs (np.ndarray): (Deprecated)
+                        Projection coefficients for full set of x2 examples, computed relative
+                        to the PCs of base (x_other if not None, else x1 -- yes, x1!), with coefficients 
+                        scaled by 1/singular value.
+
+        """       
+        
         assert len(x1.shape) == 2 and len(x2.shape) == 2, "Inputs must be flattened with rows as examples"
         assert x1.shape[1] == x2.shape[1], "Inputs have different # of features"
 
@@ -180,7 +262,30 @@ class StructureComparePair():
             self.x1_div_coeffs.append(curr_x1_div @ v_div_base_T.T[:, :num_vals])
             self.x2_div_coeffs.append(curr_x2_div @ v_div_base_T.T[:, :num_vals])
 
-    def compute_overlap(self, block_size = None):
+    def compute_overlap(self, block_size: Optional[int] = None) -> np.ndarray:
+        """ 
+            Computes the overlap between all subset pairs (i, j) in self.x1_divided and self.x2_divided.
+            In particular, for each pair (i, j), the principal components of 
+            Union(x1_divided[i], x2_divided[i]) and Union(x1_divided[j], x2_divided[j]) are computed.
+            
+            Then, we compute the overlap between principal components 0:block_size, block_size:2*block_size,
+            ... up until self.div_retained_vals (number of eigenvectors to explain retained_var proportion
+            of variance). Overlap between matrices A, B whose columns are orthogonal is computed
+            as ||A.T @ B||_F^2 / c, where c is the number of columns in A and B
+
+            Returns a 3D tensor, overlaps, where overlaps[i, j, k] specifies overlap between subsets i,j
+            for eigenvectors k*block_size : (k + 1)*block_size
+
+        Args:
+            block_size (Optional[int]): Desired block size to use for eigenvector computation. 
+            If not provided, self.div_retained_vals // 20 is used. Defaults to None.
+
+        Returns:
+            overlaps (np.ndarray): 
+                    A 3D tensor, overlaps, where overlaps[i, j, k] specifies overlap between subsets i,j
+                    for eigenvectors k*block_size : (k + 1)*block_size. 
+                    Shape = (self.num_divisions, self.num_divisions, self.div_retained_vals // block_size)
+        """        
         if block_size is None:
             block_size = self.div_retained_vals // 20
         
