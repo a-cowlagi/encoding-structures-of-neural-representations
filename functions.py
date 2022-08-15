@@ -1,4 +1,5 @@
 # import re
+from curses import window
 import numpy as np
 import torch
 from torch import nn, optim
@@ -269,6 +270,8 @@ def FIM_true(model, criterion, loader, device, k):
     model.eval()
 
     for i, (data, target) in enumerate(loader):
+        if (i % 100 == 0):
+            print(i)
         data, target = data.to(device), target.to(device)
         output = model(data)
         pr = F.softmax(output, dim=1)
@@ -297,6 +300,7 @@ def FIM_true(model, criterion, loader, device, k):
 
     L, v = scipy.linalg.eigh(FIM, driver='evx', subset_by_index=[
                              len(loader)-k, len(loader)-1])
+    # L, v = torch.lobpcg(FIM, k = k)
 
     L = torch.tensor(L).to(device)
     v = torch.tensor(v).to(device)
@@ -671,6 +675,19 @@ def overlap(A, B, k, device = "cpu"):
 
     return over.detach().cpu()
 
+def block_overlap(A, B, k, window_size, device = "cpu"):
+
+    A, B = torch.tensor(A).to(device), torch.tensor(B).to(device)
+    over = torch.zeros(k // window_size).to(device)
+
+    for i in range(k // window_size):
+        a = A[:, i*window_size:(i+1)*window_size]
+        b = B[:, i*window_size:(i+1)*window_size]
+        overlap = torch.norm(a.T@b, p='fro') / float(np.sqrt(a.shape[1]))
+
+        over[i] = overlap
+
+    return over.detach().cpu()
 
 
 

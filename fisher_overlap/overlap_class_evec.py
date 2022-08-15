@@ -3,7 +3,6 @@ sys.path.append("./" )
 from utils import *
 import torch
 from torch import nn
-from torch.utils.data import TensorDataset, DataLoader
 from functions import FIM_true, overlap
 from dataset import create_dataset_approx, per_class_loader
 

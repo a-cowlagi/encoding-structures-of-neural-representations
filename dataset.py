@@ -1,7 +1,8 @@
+from json import load
 import numpy as np
 import torch
 from torch import nn, optim
-from torch.utils.data import TensorDataset, DataLoader
+from torch.utils.data import Dataset, TensorDataset, DataLoader
 from torchvision import transforms, datasets
 import matplotlib.pyplot as plt
 
@@ -21,7 +22,6 @@ def sample_balance(dataset, n_balance):
     return: balanced sampled data and targets
 
     '''
-
     data_list = []
     targets_list = []
     d = torch.max(dataset.targets)
@@ -385,6 +385,24 @@ def create_mnist(num_classes, n1, n2, num_approx):
 
     return train_set, train_set_prior, train_set_approx, test_set
 
+def get_custom_transform(dataset_name):
+    if dataset_name == "mnist":
+        transform = transforms.Compose([])
+    elif dataset_name == "cifar10":
+        mean = [0.4914, 0.4822, 0.4465]
+        std = [0.2023, 0.1994, 0.2010]
+        normalize = transforms.Normalize(mean, std)
+        transform = transforms.Compose([normalize])
+    elif dataset_name == "cifar100":
+        mean = [0.5071, 0.4867, 0.4408]
+        std = [0.2675, 0.2565, 0.2761]
+        normalize = transforms.Normalize(mean, std)
+        transform = transforms.Compose([normalize])
+    else:
+        raise NotImplementedError
+
+    return transform
+
 
 def create_mnist_random(num_classes, num_true, num_random, num_approx):
     mean = [0.131]
@@ -429,14 +447,13 @@ def create_mnist_random(num_classes, num_true, num_random, num_approx):
 
 
 
-def create_dataset_approx(dataset_name = "cifar10"):
-    
+def create_dataset_approx(dataset_name = "cifar10", num_approx = None):
     x_train_approx = y_train_approx = None
     
     if (dataset_name == "cifar10"):
         num_true = 55000
         num_prior = 5000
-        num_approx = 10000
+        num_approx = 10000 if num_approx is None else num_approx
         num_classes = 10
         
         train_set, _, train_set_approx, test_set = create_cifar(num_classes, num_true, num_prior, num_approx)
@@ -448,7 +465,7 @@ def create_dataset_approx(dataset_name = "cifar10"):
     if (dataset_name == "mnist"):
         num_true = 55000
         num_prior = 5000
-        num_approx = 10000
+        num_approx = 10000 if num_approx is None else num_approx
         num_classes = 10
         
         train_set, _, train_set_approx, test_set = create_mnist(num_classes, num_true, num_prior, num_approx)
@@ -481,8 +498,20 @@ def get_class_i(x, y, i, dataset = "mnist"):
         x_i = np.squeeze(x_i, axis = 4)
    
 
-    if (dataset == "mnist" or dataset == "cifar10"):
-        return np.array(x_i).astype('float32'), i*np.ones(len(x_i))
+    return np.array(x_i).astype('float32'), i*np.ones(len(x_i))
+
+
+def get_bin_task(x, y, cls1, cls2, dataset_name):
+    y = np.array(y)
+    x_task = x[np.logical_or(y == cls1,y == cls2) != 0]
+    y_task = y[np.logical_or(y == cls1,y == cls2) != 0]
+
+    if (dataset_name == "cifar10"):
+        x_task = np.transpose(x_task, (0, 3, 2, 1))
+   
+
+    return np.array(x_task).astype('float32'), y_task
+
 
 def per_class_loader(dataset_name, x_train, y_train, num_classes = 10, batch_size = 1, **kwargs):
     loaders = []
@@ -501,7 +530,48 @@ def per_class_loader(dataset_name, x_train, y_train, num_classes = 10, batch_siz
     
     return num_samples, loaders
 
+def per_task_loader(dataset_name, x_train, y_train, tasks, batch_size = 1):
+    loaders = []
+    num_samples = []
+    for i, (cls1, cls2) in enumerate(tasks):
+        X, y = get_bin_task(x =x_train, y = y_train, cls1 = cls1, cls2 = cls2, dataset_name = dataset_name)
+        X, y = torch.from_numpy(X), torch.from_numpy(y)
+        transform = get_custom_transform(dataset_name)
+        task_trainset = CustomTensorDataset((X, y), transform=transform)
+        task_loader = DataLoader(task_trainset,
+                                          batch_size=batch_size,
+                                          shuffle = False)
+
+        num_samples.append((len(y)))
+        loaders.append(task_loader)
+
+    return num_samples, loaders
+
+
 def get_cmap(n, name='hsv'):
     '''Returns a function that maps each index in 0, 1, ..., n-1 to a distinct 
     RGB color; the keyword argument name must be a standard mpl colormap name.'''
     return plt.cm.get_cmap(name, n)
+
+
+
+class CustomTensorDataset(Dataset):
+    """TensorDataset with support of transforms.
+    """
+    def __init__(self, tensors, transform=None):
+        assert all(tensors[0].size(0) == tensor.size(0) for tensor in tensors)
+        self.tensors = tensors
+        self.transform = transform
+
+    def __getitem__(self, index):
+        x = self.tensors[0][index]
+
+        if self.transform:
+            x = self.transform(x)
+
+        y = self.tensors[1][index]
+
+        return x, y
+
+    def __len__(self):
+        return self.tensors[0].size(0)
