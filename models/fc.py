@@ -7,7 +7,7 @@ class Network(nn.Module):
     def __init__(self, num_classes, num_layers, num_neurons):
         super(Network, self).__init__()
         layers = []
-        layers.append(nn.Linear(28*28, num_neurons))
+        layers.append(nn.Linear(32*32*3, num_neurons))
         layers.append(nn.ReLU())
         for i in range(num_layers-1):
             layers.append(nn.Linear(num_neurons, num_neurons))

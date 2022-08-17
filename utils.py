@@ -38,7 +38,7 @@ def get_model_class(model_name):
     return mc
 
 
-def get_args(model_name = "lenet", num_true = 55000, num_prior = 5000, num_random = 0, num_approx = 10000, num_classes = 2, dataset = "mnist",
+def get_args(model_name = "lenet", num_true = 55000, num_prior = 5000, num_random = 0, num_approx = 10000, num_classes = 10, dataset = "mnist",
             num_neurons = 600, num_layers = 2, depth = 10, num_channels = 4, widen_factor = 8, drop_out = 0, c1 = 96, c2 = 144):
     # dataset
     num_inplanes = 1 if dataset == "mnist" else 3

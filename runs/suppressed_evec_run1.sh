@@ -1,0 +1,1 @@
+python3 -u suppressing_eigenvectors/train_suppressed_models.py --dataset cifar10 --model_name all_cnn --epochs 20 --batch_size 128 --window_size 30
