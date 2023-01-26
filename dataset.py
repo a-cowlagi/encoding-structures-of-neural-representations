@@ -24,12 +24,12 @@ def sample_balance(dataset, n_balance):
     '''
     data_list = []
     targets_list = []
-    d = torch.max(dataset.targets)
+    d = int(torch.max(dataset.targets))
 
     for i in range(d+1):
         idx = dataset.targets == i
-        data_list.append(dataset.data[idx][:n_balance//(d+1)])
-        targets_list.append(dataset.targets[idx][:n_balance//(d+1)])
+        data_list.append(dataset.data[idx][:(n_balance//(d+1))])
+        targets_list.append(dataset.targets[idx][:(n_balance//(d+1))])
 
     data = torch.cat(data_list, dim=0)
     targets = torch.cat(targets_list, dim=0)
@@ -40,14 +40,14 @@ def sample_balance(dataset, n_balance):
 def split_balance(dataset, n1, n2):
 
     data1_list, targets1_list, data2_list, targets2_list = [], [], [], []
-    d = torch.max(dataset.targets)
+    d = int(torch.max(dataset.targets))
 
     for i in range(d+1):
         idx = dataset.targets == i
-        data1_list.append(dataset.data[idx][:n1//(d+1)])
-        targets1_list.append(dataset.targets[idx][:n1//(d+1)])
-        data2_list.append(dataset.data[idx][-n2//(d+1):])
-        targets2_list.append(dataset.targets[idx][-n2//(d+1):])
+        data1_list.append(dataset.data[idx][:(n1 // (d + 1))])
+        targets1_list.append(dataset.targets[idx][:(n1 // (d + 1))])
+        data2_list.append(dataset.data[idx][-(n2 // (d + 1)):])
+        targets2_list.append(dataset.targets[idx][-(n2 // (d + 1)):])
 
     data1 = torch.cat(data1_list, dim=0)
     targets1 = torch.cat(targets1_list, dim=0)
@@ -76,7 +76,7 @@ def sample_combined(dataset, n_true, n_random, balance=True):
 
     '''
 
-    d = torch.max(dataset.targets)
+    d = int(torch.max(dataset.targets))
 
     if balance == True:
 
@@ -86,9 +86,9 @@ def sample_combined(dataset, n_true, n_random, balance=True):
 
         for i in range(d+1):
             idx = dataset.targets == i
-            data_true_list.append(dataset.data[idx][:n_true//(d+1)])
-            targets_true_list.append(dataset.targets[idx][:n_true//(d+1)])
-            data_random_list.append(dataset.data[idx][-n_random//(d+1):])
+            data_true_list.append(dataset.data[idx][:(n_true//(d+1))])
+            targets_true_list.append(dataset.targets[idx][:(n_true//(d+1))])
+            data_random_list.append(dataset.data[idx][-(n_random//(d+1)):])
 
         data_true = torch.cat(data_true_list, dim=0)
         targets_true = torch.cat(targets_true_list, dim=0)
@@ -118,7 +118,7 @@ def sample_combined(dataset, n_true, n_random, balance=True):
 
 def sample_combined2(dataset, n_true, n_random, n_approx):
 
-    d = torch.max(dataset.targets)
+    d = int(torch.max(dataset.targets))
     data_true = dataset.data[:n_true]
     targets_true = dataset.targets[:n_true]
     data_random = dataset.data[-n_random:]

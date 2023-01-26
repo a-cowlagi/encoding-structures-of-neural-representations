@@ -10,8 +10,8 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
 kwargs = {'num_workers': 1, 'pin_memory': True} if device == 'cuda' else {}
 
-model_name = "lenet"
-dataset = "mnist"
+model_name = "all_cnn"
+dataset = "cifar10"
 (num_true, num_prior, num_random, num_approx, num_classes), args = get_args()    
 path = create_path(model_name, args, num_true, num_random, dataset)
 
